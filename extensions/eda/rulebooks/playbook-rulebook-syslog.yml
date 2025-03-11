@@ -2,7 +2,7 @@
 - name: Listen for events via syslog
   hosts: all
   sources:
-    - dainok.common.syslog:
+    - dainok.courses.syslog:
         host: 0.0.0.0
         port: 1514
   rules:
