@@ -1,0 +1,4 @@
+- name: DEBIAN-SSH-RESTART
+  ansible.builtin.systemd:
+    name: ssh.service
+    state: restarted

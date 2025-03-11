@@ -1,0 +1,37 @@
+# Check role level variables
+- name: OVERRIDE WITH linux_systemd_enable_disable_systemd_enabled
+  ansible.builtin.set_fact:
+    systemd_enabled: "{{ linux_systemd_enable_disable_systemd_enabled }}"
+  when: linux_systemd_enable_disable_systemd_enabled is defined
+- name: OVERRIDE WITH linux_systemd_enable_disable_systemd_disabled
+  ansible.builtin.set_fact:
+    systemd_disabled: "{{ linux_systemd_enable_disable_systemd_disabled }}"
+  when: linux_systemd_enable_disable_systemd_disabled is defined
+- name: OVERRIDE WITH linux_systemd_enable_disable_systemd_masked
+  ansible.builtin.set_fact:
+    systemd_masked: "{{ linux_systemd_enable_disable_systemd_masked }}"
+  when: linux_systemd_enable_disable_systemd_masked is defined
+# Enable services
+- name: ENABLING SERVICES
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    masked: false
+  with_items: "{{ systemd_enabled }}"
+  when: systemd_enabled is defined
+# Disable services
+- name: DISABLING SERVICES
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    masked: false
+  with_items: "{{ systemd_disabled }}"
+  when: systemd_disabled is defined
+# Disable and mask services
+- name: DISABLING AND MASKING SERVICES
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    masked: true
+  with_items: "{{ systemd_masked }}"
+  when: systemd_masked is defined
