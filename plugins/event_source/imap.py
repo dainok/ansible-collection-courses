@@ -31,26 +31,30 @@ def email_unpack(eml:email.message.Message, emails:list=None):
                 continue
             if content_type.startswith("message/"):
                 for nested_email in eml_part.get_payload():
-                    # TODO: error with decode=True
                     emails = email_unpack(nested_email, emails)
 
-            payloads.append({
-                "content-type": eml_part.get_content_type(),
-                "payload": eml_part.get_payload(decode=True),
+            payload = eml_part.get_payload(decode=True)
+            if payload:
+                payloads.append({
+                    "content-type": eml_part.get_content_type(),
+                    "payload": payload.decode(),
+                })
+        if payloads:
+            emails.append({
+                "headers": headers,
+                "payloads": payloads,
             })
-        emails.append({
-            "headers": headers,
-            "payloads": payloads,
-        })
     else:
         headers = eml.items()
-        emails.append({
-            "headers": headers,
-            "payloads": [{
-                "content-type": eml.get_content_type(),
-                "payload": eml.get_payload(decode=True),
-            }],
-        })
+        payload = eml.get_payload(decode=True)
+        if payload:
+            emails.append({
+                "headers": headers,
+                "payloads": [{
+                    "content-type": eml.get_content_type(),
+                    "payload": payload.decode(),
+                }],
+            })
     return emails
 
 
@@ -79,17 +83,19 @@ async def main(queue: asyncio.Queue, args: dict[str, Any]) -> None:
             box.select(mailbox=folder)
             typ, data = box.search(None, "ALL")
             for num in data[0].split():
-                logging.info(f"Got email {num}")
+                logging.info(f"Got email {num.decode()}")
                 typ, msg = box.fetch(num, '(RFC822)')
                 eml = email.message_from_bytes(msg[0][1])
                 emails_unpacked = email_unpack(eml)
                 # Analize attached emails only (drop the container)
                 for email_unpacked in emails_unpacked[0:-1]:
-                    queue.put(email_unpacked)
+                    print(email_unpacked)
+                    await queue.put(email_unpacked)
                     
                 # Delete email
-                logging.info(f"Marking email {num} as deleted")
-                box.store(num, "+FLAGS", "\\Deleted")
+                logging.info(f"Marking email {folder}:{num.decode()} as deleted")
+                # TODO: uncomment the following line
+                # box.store(num, "+FLAGS", "\\Deleted")
 
             # Clear mailbox before moving to the next one
             logging.info(f"Clearing {folder} folder")
